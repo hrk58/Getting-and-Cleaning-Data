@@ -95,13 +95,9 @@ run_analysis <- function() {
      #---------- View the data and write it out to a file -------------------------
      
      View(tidyData, "Results of Samsung Data")
-     
-     return(tidyData)
 
      write.table(tidyData, file = "tidydata.txt",row.name=FALSE)
      print("Results have been saved and are located in ./tidydata.txt") 
-     
-     return(tidyData)
      
 }
      
