@@ -5,9 +5,138 @@ date: "July 24, 2015"
 output: word_document
 ---
 
+## Acquiring the data set
+
+The original files are located at: https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip  
+
+After downloading the zip file, the files need to be unzipped into the working
+directory.
+
+## Reading the data into the function
+
+The files are read into data frames by the function as follows:
+
+* y_test.txt
+* subject_test.txt
+* X_test.txt
+* y_train.txt
+* subject_train.txt
+* X_train.txt
+
+The data frames are then appended together to create one large frame.
+
+The column labels of subject and activity are then updated to be more readable.
+The data dictionary files are then read in:
+
+* activity_labels.txt
+* features.txt
+
+The columns in the resulting features table is then scanned and selected into a
+subset dataframe to contain only those labels that contain mean() and std().
+This is the dataset in which we are interested.
+
+Using this subset of names, we extract all of the data from the large dataframe
+that was initially created, followed by adding the descriptive activity labels,
+and subject ID.
+
+## Tidying the Data
+
+The dataframe is then aggregated and the mean is computed for each feature data
+column. This operation is then followed by ordering the data by subject followed
+by the activity each subject performed. The feature labels are then updated to
+be more readable.
+
+## Results
+
+Results of the tidy data set are displayed and written to the file tidydata.txt
+in the working directory.
+
 ***
-# Human Activity Recognition Using Smartphones Dataset
-## Version 1.0
+# run_analysis() Code
+
+
+***
+
+     
+     #----------- Read the data files ----------------------------------
+     
+     print("Reading Test Data ....")
+     
+     dataActivityTest  <- read.table ("y_test.txt" ,header = FALSE)
+     dataSubjectTest   <- read.table ("subject_test.txt", header = FALSE)
+     dataFeaturesTest  <- read.table ( "X_test.txt" ,header = FALSE)
+     
+     print ("Reading Training Data ....")
+     
+     dataActivityTrain  <- read.table ("y_train.txt" ,header = FALSE)
+     dataSubjectTrain   <- read.table ("subject_train.txt", header = FALSE)
+     dataFeaturesTrain  <- read.table ( "X_train.txt" ,header = FALSE)
+     
+     #------------ Merge the Test and Training Data together -------------
+     
+     print ("Merging Training and Test Data together ....")
+     
+     dataSubject  <- rbind(dataSubjectTrain, dataSubjectTest)
+     dataActivity <- rbind(dataActivityTrain, dataActivityTest)
+     dataFeatures <- rbind(dataFeaturesTrain, dataFeaturesTest)
+     
+     #------------ Add more readable labels ------------------------------
+     
+     print ("Updating labels for Subject and Subject Activities ....")
+     
+     names(dataSubject)  <- c("Subject")
+     names(dataActivity) <- c("Activity ID")
+     
+     print ("Reading Activity and Feature definition files ....")
+     
+     activityLabels        <- read.table ("activity_labels.txt",header = FALSE)
+     names(activityLabels) <- c("Activity ID", "Activity")
+     
+     dataFeaturesNames     <- read.table("features.txt",head=FALSE)
+     names(dataFeatures)   <- dataFeaturesNames$V2
+     
+     print ("Combining Subject, Activity, with Feature Data.")
+     
+     dataCombine <- cbind(dataSubject, dataActivity)
+     Data        <- cbind(dataFeatures, dataCombine)
+     
+     print("Creating Subset of data containing only mean and std feature data.")
+     
+     subFeaturesNames <- dataFeaturesNames$V2[grep("mean\\(\\)|std\\(\\)", 
+                                                   dataFeaturesNames$V2)]
+     
+     
+     selectedNames <- c(as.character(subFeaturesNames),"Subject", "Activity ID")
+     Data <- subset(Data, select=selectedNames)
+     Data <- mutate(Data, Activity = activityLabels[Data$`Activity ID` ,2])
+     Data$`Activity ID` <- NULL  
+     
+     #---------- Tidy the data up by aggregating on mean then ordering it ------
+     
+     print ("Tidying the Data that contains the average (mean) of each variable.")
+     print ("Ordered by Subject and Activity ....")
+     
+     tidyData <- aggregate(. ~Subject + Activity, Data, mean)
+     tidyData <- tidyData[order(tidyData$Subject, tidyData$Activity), ]
+     
+     names(tidyData) <- gsub("^t",       "time",          names(tidyData))
+     names(tidyData) <- gsub("^f",       "frequency",     names(tidyData))
+     names(tidyData) <- gsub("Acc",      "Accelerometer", names(tidyData))
+     names(tidyData) <- gsub("Gyro",     "Gyroscope",     names(tidyData))
+     names(tidyData) <- gsub("Mag",      "Magnitude",     names(tidyData))
+     names(tidyData) <- gsub("BodyBody", "Body",          names(tidyData))
+     names(tidyData) <- gsub("\\(|\\)",   "",             names(tidyData))
+     
+     #---------- View the data and write it out to a file --------------------
+     
+     View(tidyData, "Results of Samsung Data")
+
+     write.table(tidyData, file = "tidydata.txt",row.name=FALSE)
+     print("Results have been saved and are located in ./tidydata.txt") 
+     
+
+***
+# Additional Information about the Samsung Data
 ***
 
 Jorge L. Reyes-Ortiz, Davide Anguita, Alessandro Ghio, Luca Oneto.
